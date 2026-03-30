@@ -354,54 +354,204 @@ function RestTimer({ seconds, onDone }) {
   );
 }
 
+//      )}
+
+      {/* LOG MODAL */}
+      {logModal && (
+        <div style={st.overlay} onClick={() => setLogModal(false)}>
+          <div style={st.modal} onClick={(e) => e.stopPropagation()}>
+            <div style={st.modalTitle}>LOG SESSION -- {dayName}</div>
+            <div style={st.modalGroup}>
+              <div style={st.modalGroupLabel}>GYM -- HC 1.2 PHASE 1</div>
+              {WORKOUT_TYPES.filter((t) => t.group === "gym").map((type) => {
+                const tmpl = BLOCK_TEMPLATES[type.id];
+                return (
+                  <button key={type.id} style={{ ...st.modalItem, borderLeftColor: type.color }} onClick={() => addWorkout(selectedDate, type.id)}>
+                    <span style={{ color: type.color, fontSize: 14, fontWeight: 700 }}>{type.icon}</span>
+                    <div>
+                      <div style={st.modalItemLabel}>{type.label}</div>
+                      {tmpl && <div style={{ fontSize: 9, color: "#5A6A5D", marginTop: 1 }}>{tmpl.length} blocks</div>}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+            <div style={st.modalGroup}>
+              <div style={st.modalGroupLabel}>COMBAT / CONDITIONING</div>
+              {WORKOUT_TYPES.filter((t) => ["bjj", "boxing", "engine"].includes(t.group)).map((type) => (
+                <button key={type.id} style={{ ...st.modalItem, borderLeftColor: type.color }} onClick={() => addWorkout(selectedDate, type.id)}>
+                  <span style={{ color: type.color, fontSize: 14, fontWeight: 700 }}>{type.icon}</span>
+                  <div>
+                    <div style={st.modalItemLabel}>{type.label}</div>
+                    {type.group === "engine" && <div style={{ fontSize: 9, color: "#6B9A8A", marginTop: 1 }}>Log duration for 90min target</div>}
+                  </div>
+                </button>
+              ))}
+            </div>
+            <div style={st.modalGroup}>
+              <div style={st.modalGroupLabel}>OTHER</div>
+              {WORKOUT_TYPES.filter((t) => t.group === "other").map((type) => (
+                <button key={type.id} style={{ ...st.modalItem, borderLeftColor: type.color }} onClick={() => addWorkout(selectedDate, type.id)}>
+                  <span style={{ color: type.color, fontSize: 14, fontWeight: 700 }}>{type.icon}</span>
+                  <div><div style={st.modalItemLabel}>{type.label}</div></div>
+                </button>
+              ))}
+            </div>
+            <button style={st.modalCancel} onClick={() => setLogModal(false)}>CANCEL</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ============================================
-// MAIN COMPONENT
+// STYLES
 // ============================================
 
-export default function WorkoutTracker() {
-  const [workouts, setWorkouts] = useState({});
-  const [selectedDate, setSelectedDate] = useState(getTodayKey());
-  const [activeWorkout, setActiveWorkout] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [logModal, setLogModal] = useState(false);
-  const [tab, setTab] = useState("day");
-  const [bodyweightData, setBodyweightData] = useState([]);
-  const [bwInput, setBwInput] = useState("");
-  const [bwDateInput, setBwDateInput] = useState(getTodayKey());
-  const [insightSection, setInsightSection] = useState("weight");
-  const [heatmapMonth, setHeatmapMonth] = useState(() => { const n = new Date(); return { year: n.getFullYear(), month: n.getMonth() }; });
-  const [activeTimer, setActiveTimer] = useState(null);
-
-  useEffect(() => {
-    try {
-      const w = localStorage.getItem("operator-workouts");
-      if (w) setWorkouts(JSON.parse(w));
-      const bw = localStorage.getItem("operator-bodyweight");
-      if (bw) setBodyweightData(JSON.parse(bw));
-    } catch (e) {}
-    setLoading(false);
-  }, []);
-
-  const saveWorkouts = useCallback((data) => {
-    setWorkouts(data);
-    try { localStorage.setItem("operator-workouts", JSON.stringify(data)); } catch (e) {}
-  }, []);
-  const saveBodyweight = useCallback((data) => {
-    setBodyweightData(data);
-    try { localStorage.setItem("operator-bodyweight", JSON.stringify(data)); } catch (e) {}
-  }, []);
-  const addBodyweight = () => {
-    const val = parseFloat(bwInput); if (isNaN(val) || val <= 0) return;
-    saveBodyweight([...bodyweightData.filter((e) => e.date !== bwDateInput), { date: bwDateInput, weight: val }].sort((a, b) => a.date.localeCompare(b.date)));
-    setBwInput("");
-  };
-  const deleteBodyweight = (date) => saveBodyweight(bodyweightData.filter((e) => e.date !== date));
-
-  const getWeekDates = (fd) => {
-    const d = new Date((fd || selectedDate) + "T12:00:00"); const dy = d.getDay(); const diff = d.getDate() - dy + (dy === 0 ? -6 : 1);
-    const mon = new Date(d); mon.setDate(diff);
-    return Array.from({ length: 7 }, (_, i) => { const dt = new Date(mon); dt.setDate(mon.getDate() + i); return dt.toISOString().split("T")[0]; });
-  };
-  const weekDates = getWeekDates(); const today = getTodayKey();
-  const wgc = { engine: 0, bjj: 0, gym: 0, boxing: 0 }; let engineMin = 0;
-  weekDates.forEa
+const st = {
+  shell: { fontFamily: "'JetBrains Mono','SF Mono','Fira Code',monospace", background: "#111613", color: "#A8B2A6", minHeight: "100vh", padding: "16px 14px 40px", maxWidth: 480, margin: "0 auto", boxSizing: "border-box" },
+  loadWrap: { display: "flex", alignItems: "center", justifyContent: "center", height: "100vh", background: "#111613", fontFamily: "monospace" },
+  loadText: { color: "#7FA36B", fontSize: 13, letterSpacing: 6 },
+  header: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 0, paddingBottom: 14, borderBottom: "1px solid #2E3A31" },
+  brandRow: { display: "flex", alignItems: "center", gap: 10 },
+  brandIcon: { fontSize: 16, color: "#7FA36B", fontWeight: 700 },
+  brandTitle: { fontSize: 13, fontWeight: 700, letterSpacing: 4, color: "#D7E0D2" },
+  brandSub: { fontSize: 7, letterSpacing: 3, color: "#6A7A6D", marginTop: 1 },
+  statsRow: { display: "flex", alignItems: "center", gap: 12 },
+  statBox: { textAlign: "center" },
+  statVal: { fontSize: 20, fontWeight: 700, color: "#D7E0D2", lineHeight: 1 },
+  statLbl: { fontSize: 7, letterSpacing: 2, color: "#6A7A6D", marginTop: 3 },
+  statDiv: { width: 1, height: 26, background: "#2E3A31" },
+  targetSection: { padding: "14px 0 12px", borderBottom: "1px solid #2E3A31", marginBottom: 14 },
+  targetGrid: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 },
+  targetCard: { padding: "10px 12px", border: "1px solid #2E3A31", background: "#1A221C" },
+  targetHead: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 },
+  targetLabel: { fontSize: 9, letterSpacing: 2, fontWeight: 700 },
+  targetCount: { fontSize: 14, fontWeight: 700 },
+  targetBarBg: { height: 3, background: "#252F28", marginBottom: 4 },
+  targetBarFill: { height: 3, transition: "width 0.3s" },
+  targetOver: { fontSize: 7, letterSpacing: 2, color: "#9FCB7B", fontWeight: 700 },
+  targetUnder: { fontSize: 7, letterSpacing: 2, color: "#4A5A4D" },
+  targetHit: { fontSize: 7, letterSpacing: 2, color: "#9FCB7B" },
+  tabRow: { display: "flex", marginBottom: 16 },
+  tabBtn: { flex: 1, background: "none", border: "none", borderBottom: "2px solid #252F28", color: "#4A5A4D", fontFamily: "inherit", fontSize: 10, letterSpacing: 2, padding: "10px 0", cursor: "pointer", fontWeight: 700 },
+  tabActive: { color: "#D7E0D2", borderBottomColor: "#7FA36B" },
+  dayNav: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 },
+  navBtn: { background: "#1A221C", border: "1px solid #2E3A31", color: "#8E9B8F", padding: "10px 16px", cursor: "pointer", fontFamily: "inherit", fontSize: 13 },
+  dayCenter: { textAlign: "center", background: "none", border: "none", cursor: "pointer", fontFamily: "inherit" },
+  dayBig: { fontSize: 24, fontWeight: 700, letterSpacing: 6, color: "#D7E0D2" },
+  dayDate: { fontSize: 10, color: "#6A7A6D", letterSpacing: 1, marginTop: 2 },
+  section: { marginBottom: 16 },
+  sectionTag: { fontSize: 8, letterSpacing: 3, color: "#6A7A6D", marginBottom: 8 },
+  loggedCard: { display: "flex", flexDirection: "column", gap: 5, padding: "14px", borderLeft: "3px solid", border: "1px solid #2E3A31", background: "#1A221C", cursor: "pointer", fontFamily: "inherit", textAlign: "left", width: "100%", boxSizing: "border-box", marginBottom: 6 },
+  loggedTop: { display: "flex", alignItems: "center", gap: 8 },
+  loggedLabel: { fontSize: 13, fontWeight: 700, letterSpacing: 2, color: "#D7E0D2" },
+  loggedCheck: { fontSize: 12, color: "#9FCB7B", marginLeft: "auto", fontWeight: 700 },
+  loggedMeta: { display: "flex", gap: 14, fontSize: 10, color: "#6A7A6D", letterSpacing: 1 },
+  loggedNotes: { fontSize: 10, color: "#4A5A4D", fontStyle: "italic", marginTop: 2 },
+  emptyState: { textAlign: "center", padding: "44px 0" },
+  logNewBtn: { width: "100%", background: "#1A221C", border: "1px dashed #3A4A3D", color: "#8E9B8F", padding: "14px", fontFamily: "inherit", fontSize: 11, letterSpacing: 3, cursor: "pointer", marginBottom: 8, marginTop: 8 },
+  todayBtn: { width: "100%", background: "none", border: "1px solid #2E3A31", color: "#7FA36B", padding: "10px", fontFamily: "inherit", fontSize: 10, letterSpacing: 3, cursor: "pointer" },
+  weekNav: { display: "flex", alignItems: "center", justifyContent: "center", gap: 16, marginBottom: 14 },
+  weekRange: { fontSize: 11, letterSpacing: 2, color: "#6A7A6D" },
+  weekList: { display: "flex", flexDirection: "column" },
+  weekRow: { display: "flex", alignItems: "center", padding: "14px 10px", borderLeft: "3px solid transparent", background: "none", border: "none", borderBottom: "1px solid #252F28", cursor: "pointer", fontFamily: "inherit", width: "100%", textAlign: "left", boxSizing: "border-box" },
+  weekDayCol: { width: 48, display: "flex", flexDirection: "column", alignItems: "center", gap: 1, flexShrink: 0 },
+  weekDayName: { fontSize: 9, letterSpacing: 2, fontWeight: 700 },
+  weekDayNum: { fontSize: 16, fontWeight: 300 },
+  weekContent: { flex: 1, paddingLeft: 10 },
+  weekChips: { display: "flex", flexWrap: "wrap", gap: 5 },
+  weekChip: { display: "inline-flex", alignItems: "center", gap: 4, padding: "3px 8px", border: "1px solid" },
+  weekEmpty: { fontSize: 14, color: "#252F28" },
+  weekArrow: { fontSize: 18, color: "#3A4A3D", flexShrink: 0 },
+  overlay: { position: "fixed", inset: 0, background: "rgba(10,14,12,0.88)", display: "flex", alignItems: "flex-end", justifyContent: "center", zIndex: 100 },
+  modal: { background: "#161E18", border: "1px solid #2E3A31", borderBottom: "none", padding: "20px 14px 28px", width: "100%", maxWidth: 480, borderRadius: "14px 14px 0 0", maxHeight: "85vh", overflowY: "auto" },
+  modalTitle: { fontSize: 10, letterSpacing: 3, color: "#6A7A6D", marginBottom: 16, textAlign: "center" },
+  modalGroup: { marginBottom: 12 },
+  modalGroupLabel: { fontSize: 8, letterSpacing: 3, color: "#4A5A4D", marginBottom: 6 },
+  modalItem: { display: "flex", alignItems: "center", gap: 12, padding: "14px 12px", borderLeft: "3px solid", border: "1px solid #2E3A31", background: "#1A221C", cursor: "pointer", fontFamily: "inherit", width: "100%", boxSizing: "border-box", marginBottom: 4 },
+  modalItemLabel: { fontSize: 12, letterSpacing: 2, color: "#A8B2A6" },
+  modalCancel: { width: "100%", background: "none", border: "1px solid #2E3A31", color: "#6A7A6D", padding: "12px", fontFamily: "inherit", fontSize: 10, letterSpacing: 3, cursor: "pointer", marginTop: 12 },
+  backBtn: { background: "none", border: "none", color: "#8E9B8F", fontFamily: "inherit", fontSize: 11, cursor: "pointer", padding: 0, marginBottom: 16, letterSpacing: 2 },
+  detailBanner: { borderLeft: "3px solid", padding: "12px 14px", marginBottom: 20, background: "#1A221C" },
+  detailTop: { display: "flex", alignItems: "center", gap: 6, marginBottom: 4 },
+  detailLabel: { fontSize: 16, fontWeight: 700, letterSpacing: 3, color: "#D7E0D2" },
+  detailDate: { fontSize: 10, color: "#6A7A6D", letterSpacing: 1 },
+  metaRow: { display: "flex", gap: 12, marginBottom: 20, flexWrap: "wrap" },
+  metaBlock: { display: "flex", flexDirection: "column", gap: 4 },
+  metaTag: { fontSize: 7, letterSpacing: 2, color: "#6A7A6D" },
+  metaInput: { background: "#111613", border: "1px solid #2E3A31", color: "#D7E0D2", padding: "10px", fontFamily: "inherit", fontSize: 12, outline: "none", width: 70, boxSizing: "border-box" },
+  exList: { display: "flex", flexDirection: "column", gap: 12, marginBottom: 14 },
+  blockCard: { border: "1px solid #2E3A31", background: "#1A221C", padding: 0, overflow: "hidden" },
+  blockHeader: { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 12px", background: "#202A22", borderBottom: "1px solid #2E3A31" },
+  blockLabel: { fontSize: 10, fontWeight: 700, letterSpacing: 2, color: "#D7E0D2" },
+  blockRest: { fontSize: 9, color: "#6A7A6D", letterSpacing: 1 },
+  supersetDivider: { borderTop: "1px dashed #2E3A31", padding: "4px 12px", background: "#161E18" },
+  supersetTag: { fontSize: 8, letterSpacing: 2, color: "#4A5A4D" },
+  exInner: { padding: "10px 12px" },
+  exHead: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 },
+  exName: { background: "none", border: "none", borderBottom: "1px solid #2E3A31", color: "#D7E0D2", fontFamily: "inherit", fontSize: 12, fontWeight: 700, letterSpacing: 1, padding: "4px 0", flex: 1, outline: "none" },
+  exDel: { background: "none", border: "none", color: "#4A5A4D", fontSize: 18, cursor: "pointer", padding: "0 6px" },
+  setLabels: { display: "flex", gap: 8, marginBottom: 4, paddingBottom: 4, borderBottom: "1px solid #252F28" },
+  setLbl: { fontSize: 7, letterSpacing: 2, color: "#4A5A4D", width: 48, textAlign: "center" },
+  setRow: { display: "flex", alignItems: "center", gap: 8, padding: "3px 0" },
+  setNum: { width: 28, textAlign: "center", fontSize: 11, color: "#4A5A4D" },
+  setIn: { width: 48, background: "#111613", border: "1px solid #2E3A31", color: "#D7E0D2", padding: "8px 4px", fontFamily: "inherit", fontSize: 12, textAlign: "center", outline: "none", boxSizing: "border-box" },
+  chk: { width: 28, height: 28, border: "1px solid", background: "none", color: "#D7E0D2", fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700 },
+  rmSet: { width: 28, height: 28, border: "1px solid #2E3A31", background: "none", color: "#4A5A4D", fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" },
+  addSetBtn: { background: "none", border: "1px dashed #3A4A3D", color: "#6A7A6D", padding: "5px", fontFamily: "inherit", fontSize: 9, letterSpacing: 2, cursor: "pointer", marginTop: 6, width: "100%" },
+  addExBtn: { background: "#1A221C", border: "1px dashed #3A4A3D", color: "#8E9B8F", padding: "14px", fontFamily: "inherit", fontSize: 11, letterSpacing: 3, cursor: "pointer", width: "100%", marginBottom: 16 },
+  actionRow: { display: "flex", gap: 10 },
+  completeBtn: { flex: 1, border: "none", color: "#111613", padding: "14px", fontFamily: "inherit", fontSize: 11, letterSpacing: 3, cursor: "pointer", fontWeight: 700 },
+  delBtn: { background: "none", border: "1px solid #2E3A31", color: "#A0604A", padding: "14px 18px", fontFamily: "inherit", fontSize: 10, letterSpacing: 2, cursor: "pointer" },
+  timerWrap: { padding: "10px 12px", borderTop: "1px solid #2E3A31", background: "#161E18" },
+  timerBarBg: { height: 4, background: "#252F28", marginBottom: 8, borderRadius: 2 },
+  timerBarFill: { height: 4, borderRadius: 2, transition: "width 1s linear" },
+  timerRow: { display: "flex", alignItems: "center", justifyContent: "space-between" },
+  timerText: { fontSize: 13, fontWeight: 700, letterSpacing: 2 },
+  timerStartBtn: { background: "#5A7A50", border: "none", color: "#D7E0D2", padding: "6px 14px", fontFamily: "inherit", fontSize: 10, letterSpacing: 2, cursor: "pointer", fontWeight: 700 },
+  timerSkipBtn: { background: "none", border: "1px solid #2E3A31", color: "#8E9B8F", padding: "6px 14px", fontFamily: "inherit", fontSize: 10, letterSpacing: 2, cursor: "pointer" },
+  insightNav: { display: "flex", gap: 4, marginBottom: 18, overflowX: "auto", paddingBottom: 4 },
+  insightNavBtn: { background: "#1A221C", border: "1px solid #2E3A31", color: "#6A7A6D", fontFamily: "inherit", fontSize: 9, letterSpacing: 1, padding: "7px 10px", cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 },
+  insightNavActive: { color: "#D7E0D2", borderColor: "#7FA36B", background: "#202A22" },
+  insightTitle: { fontSize: 13, fontWeight: 700, letterSpacing: 3, color: "#D7E0D2", marginBottom: 16 },
+  bwForm: { display: "flex", gap: 8, marginBottom: 16 },
+  bwDateIn: { background: "#1A221C", border: "1px solid #2E3A31", color: "#D7E0D2", padding: "8px", fontFamily: "inherit", fontSize: 11, outline: "none", flex: 1, boxSizing: "border-box", colorScheme: "dark" },
+  bwWeightIn: { background: "#1A221C", border: "1px solid #2E3A31", color: "#D7E0D2", padding: "8px", fontFamily: "inherit", fontSize: 12, outline: "none", width: 70, boxSizing: "border-box", textAlign: "center" },
+  bwAddBtn: { background: "#5A7A50", border: "none", color: "#D7E0D2", padding: "8px 14px", fontFamily: "inherit", fontSize: 10, letterSpacing: 2, cursor: "pointer", fontWeight: 700 },
+  chartWrap: { marginBottom: 16 },
+  bwRow: { display: "flex", alignItems: "center", padding: "8px 0", borderBottom: "1px solid #252F28", gap: 10 },
+  bwRowDate: { fontSize: 10, color: "#6A7A6D", letterSpacing: 1, flex: 1 },
+  bwRowVal: { fontSize: 12, color: "#D7E0D2", fontWeight: 700 },
+  bwRowDel: { background: "none", border: "none", color: "#3A4A3D", fontSize: 16, cursor: "pointer", padding: "0 4px" },
+  emptyHint: { fontSize: 10, color: "#4A5A4D", letterSpacing: 1, marginBottom: 12 },
+  streakCard: { textAlign: "center", padding: "20px 0", marginBottom: 20, border: "1px solid #2E3A31", background: "#1A221C" },
+  streakBig: { fontSize: 36, fontWeight: 700, color: "#D7E0D2", lineHeight: 1 },
+  streakLabel: { fontSize: 9, letterSpacing: 3, color: "#6A7A6D", marginTop: 6 },
+  perfectRow: { marginBottom: 14 },
+  perfectHead: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 },
+  perfectLabel: { fontSize: 10, letterSpacing: 2, fontWeight: 700 },
+  perfectCount: { fontSize: 12, color: "#D7E0D2", fontWeight: 700 },
+  perfectPct: { fontSize: 8, letterSpacing: 2, color: "#4A5A4D" },
+  totalRow: { padding: "12px 0", borderBottom: "1px solid #252F28" },
+  totalLabel: { fontSize: 10, letterSpacing: 2, fontWeight: 700 },
+  totalNums: { display: "flex", alignItems: "baseline", gap: 4, marginTop: 4 },
+  totalBig: { fontSize: 18, fontWeight: 700, color: "#D7E0D2" },
+  totalUnit: { fontSize: 9, color: "#6A7A6D", letterSpacing: 1 },
+  breakdownRow: { display: "flex", alignItems: "center", gap: 8, padding: "8px 0", borderBottom: "1px solid #252F28" },
+  breakdownLabel: { fontSize: 10, color: "#8E9B8F", letterSpacing: 1, flex: 1 },
+  breakdownVal: { fontSize: 12, color: "#D7E0D2", fontWeight: 700 },
+  breakdownMin: { fontSize: 10, color: "#6A7A6D" },
+  heatNav: { display: "flex", alignItems: "center", justifyContent: "center", gap: 16, marginBottom: 14 },
+  heatLabel: { fontSize: 11, letterSpacing: 2, color: "#6A7A6D" },
+  heatGrid: { display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 3, marginBottom: 12 },
+  heatDayLabel: { textAlign: "center", fontSize: 9, color: "#4A5A4D", letterSpacing: 1, paddingBottom: 4 },
+  heatCell: { aspectRatio: "1", display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid #2E3A31", background: "#1A221C" },
+  heatLegend: { display: "flex", gap: 14, justifyContent: "center", marginTop: 8 },
+  heatLegItem: { display: "flex", alignItems: "center", gap: 4, fontSize: 9, color: "#6A7A6D" },
+  heatLegDot: { width: 10, height: 10, display: "inline-block", border: "1px solid #2E3A31" },
+  volRow: { display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: "1px solid #252F28" },
+  volWeek: { fontSize: 10, color: "#6A7A6D", letterSpacing: 1 },
+  volVal: { fontSize: 12, color: "#D7E0D2", fontWeight: 700 },
+};
